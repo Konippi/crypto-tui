@@ -1,23 +1,43 @@
-use std::sync::atomic::AtomicUsize;
+use serde::Deserialize;
 
-use serde::{Deserialize, Serialize};
-use serde_json::value::RawValue;
-
-use super::client::JSONRPC_VERSION;
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct JsonRpcResponse {
-    pub version: &'static str,
-    pub id: AtomicUsize,
-    pub result: Option<Box<RawValue>>,
+#[derive(Debug, Deserialize)]
+#[serde(untagged)]
+pub enum JsonRpcResponse {
+    Success(SuccessResponse),
+    Notification(NotificationMessage),
 }
 
-impl JsonRpcResponse {
-    pub fn new(&self, id: AtomicUsize, result: Option<Box<RawValue>>) -> Self {
-        Self {
-            version: JSONRPC_VERSION,
-            id,
-            result,
-        }
-    }
+#[derive(Debug, Deserialize)]
+pub struct SuccessResponse {
+    #[serde(rename = "jsonrpc")]
+    pub version: String,
+    pub id: u64,
+    pub result: bool,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct NotificationMessage {
+    #[serde(rename = "jsonrpc")]
+    pub version: String,
+    pub method: String,
+    pub params: Params,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct Params {
+    pub channel: String,
+    pub message: BoardMessage,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct BoardMessage {
+    pub mid_price: f64,
+    pub bids: Vec<Order>,
+    pub asks: Vec<Order>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct Order {
+    pub price: f64,
+    pub size: f64,
 }
